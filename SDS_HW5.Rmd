@@ -1,0 +1,106 @@
+---
+title: "SDS_HW5"
+output: html_document
+date: "2024-02-29"
+---
+
+```{r}
+library(mosaic)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# *Problem 1*
+
+- **Null: Hypothesis** :  The baseline probability that any legal trade will be flagged by their algorithm is 2.4%.
+- **Test Statistic** : Flagged Trades.
+- **Plot of probablity distribution statistic**:
+```{r echo = FALSE}
+sim_sec = do(10000) * nflip(n = 2021, prob = 0.024)
+ggplot(sim_sec) + 
+  geom_histogram(aes(x=nflip), binwidth=1) +
+  labs(title = "Probability distribution of test statistic", x = "Number of flagged trades", y = "Frequency")
+```
+- **P value**:
+```{r echo =FALSE}
+p_value = sum(sim_sec >= 70) / 10000
+p_value
+```
+- **Conclusion**: The p-value calcluated is 0.0014, which is below the significance level of 0.05. This gives us evidence to reject the null hypothesis. Thus we can say that securities trades from the Iron bank are significantly higher than the baseline probability of 2.4%
+
+# *Problem 2*
+
+- **Null Hypothesis** : Gourmet Bites’ rate of health code violations is about than the citywide average of 3%.
+- **Test Statistic** : Health code violations
+- **Plot of probablity distribution statistic**:
+```{r echo = FALSE}
+sim_gb = do(100000) * nflip(n = 50, prob = 0.03)
+ggplot(sim_gb) + 
+  geom_histogram(aes(x=nflip), binwidth=1) +
+  labs(title = "Probability distribution of test statistic", x = "Number of Health code violations", y = "Frequency")
+```
+
+- **P - Value**
+```{r echo = FALSE}
+p_value = mean(sim_gb >= 8)
+p_value
+```
+
+- **Conclusion** : The p-value of 0.00015 is lower than the significance level of 0.05. This means that we have evidence to reject the null hypothesis. We can thus conclude that Gourmet Bites' rate of health cide violations is greater than 3%.
+
+# *Problem 3*
+
+# **Part A**
+```{r echo = FALSE, results='hide'}
+sentences_data <- readLines("/Users/disharaj/Downloads/brown_sentences.txt")
+letters_data <- read.csv("/Users/disharaj/Downloads/letter_frequencies.csv")
+chi_squared_func = function(sentence, freq_table) {
+
+
+  freq_table$Probability = freq_table$Probability / sum(freq_table$Probability)
+  sentence <- gsub("[^A-Za-z]", "", sentence) 
+  sentence <- toupper(sentence)
+  letter_count <- table(factor(strsplit(sentence, "")[[1]], levels = freq_table$Letter))
+  total_count = sum(letter_count)
+  expected_count = total_count * freq_table$Probability
+  chi_stat = sum((letter_count - expected_count)^2 / expected_count)
+  return(chi_stat)
+}
+chi_squared <- numeric(length(sentences_data)) 
+for (i in 1:length(sentences_data)) {
+  chi_squared[i] <- chi_squared_func(sentences_data[i], letters_data)
+}
+```
+
+```{r echo = FALSE}
+hist(chi_squared)
+```
+
+# **Part B**
+```{r echo =FALSE}
+sentences_data <- c(
+  "She opened the book and started to read the first chapter, eagerly anticipating what might come next.",
+  "Despite the heavy rain, they decided to go for a long walk in the park, crossing the main avenue by the fountain in the center.",
+  "The museum’s new exhibit features ancient artifacts from various civilizations around the world.",
+  "He carefully examined the document, looking for any clues that might help solve the mystery.",
+  "The students gathered in the auditorium to listen to the guest speaker’s inspiring lecture.",
+  "Feeling vexed after an arduous and zany day at work, she hoped for a peaceful and quiet evening at home, cozying up after a quick dinner with some TV, or maybe a book on her upcoming visit to Auckland.",
+  "The chef demonstrated how to prepare a delicious meal using only locally sourced ingredients, focusing mainly on some excellent dinner recipes from Spain.",
+  "They watched the sunset from the hilltop, marveling at the beautiful array of colors in the sky.",
+  "The committee reviewed the proposal and provided many points of useful feedback to improve the project’s effectiveness.",
+  "Despite the challenges faced during the project, the team worked tirelessly to ensure its successful completion, resulting in a product that exceeded everyone’s expectations."
+)
+```
+
+```{r echo = FALSE}
+p_values <- c()
+for (i in 1:length(sentences_data)) {
+  p_values[i] <- round((sum(1 * (chi_squared >= chi_squared_func(sentences_data[i], letters_data))) / length(chi_squared)), 3)
+}
+sentences_tibble <- tibble(sentence1 = sentences_data, P_value = p_values)
+print(sentences_tibble)
+```
+
+The 6th sentence has the smallest p-value of 0.0009. Thus, the LLM output is the 6th sentence. 
